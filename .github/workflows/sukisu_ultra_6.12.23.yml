@@ -267,7 +267,6 @@ jobs:
           echo "修复完成，文件列表:"
           ls -la kernel/include/uapi/
           test -f kernel/include/uapi/supercall.h && echo "supercall.h OK" || echo "supercall.h MISSING"
-          fi
 
       - name: 应用 KernelSU & SUSFS 补丁
         if: inputs.susfs_enable

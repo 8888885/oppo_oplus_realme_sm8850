@@ -270,6 +270,9 @@ jobs:
           # 也复制到 kpm 目录下，确保 kpm.h 的相对路径 include 能找到
           mkdir -p kernel/kpm/uapi
           cp -f uapi/*.h kernel/kpm/uapi/
+          # 也复制到 kernel/uapi/ 确保 -I$(KSU_KERNEL_DIR) 路径能找到
+          mkdir -p kernel/uapi
+          cp -f uapi/*.h kernel/uapi/
           # 确保编译时能找到uapi头文件，通过添加include路径
           echo "所有 uapi 头文件复制完成"
 

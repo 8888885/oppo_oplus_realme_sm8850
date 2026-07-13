@@ -292,6 +292,16 @@ jobs:
             echo "已选择无内置KernelSU模式，跳过KernelSU配置..."
           fi
 
+
+      - name: 应用 KPM 恢复补丁 (适配最新 ReSukiSU 上游)
+        run: |
+          echo "正在下载并应用 KPM 恢复补丁..."
+          cd kernel_workspace
+          wget -q https://github.com/${GITHUB_REPOSITORY}/raw/refs/heads/${GITHUB_REF_NAME}/kpm_patch.sh -O kpm_patch.sh
+          chmod +x kpm_patch.sh
+          bash kpm_patch.sh ./KernelSU
+          echo "KPM 补丁应用完成"
+
       - name: 应用 KernelSU & SUSFS 补丁
         if: inputs.susfs_enable
         run: |
@@ -386,6 +396,11 @@ jobs:
           # 6.12内核Rust配置
           echo "CONFIG_RUST=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_ANDROID_BINDER_IPC_RUST=m" >> ./common/arch/arm64/configs/gki_defconfig
+          # 启用内核原生 KPM 支持（需要 KPM 补丁已应用）
+          if [[ "${{ github.event.inputs.ksu_type }}" == "resukisu" || "${{ github.event.inputs.ksu_type }}" == "sukisu" ]]; then
+            echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "KPM 已启用"
+          fi
           
       - name: 启用网络功能增强优化配置
         if: inputs.better_net

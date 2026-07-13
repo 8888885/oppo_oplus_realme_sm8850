@@ -257,6 +257,21 @@ jobs:
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
           echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
 
+      - name: 修复 SukiSU Ultra uapi 符号链接
+        run: |
+          cd kernel_workspace/KernelSU
+          echo "修复 uapi 符号链接..."
+          if [ -L kernel/include/uapi ]; then
+            echo "检测到符号链接，替换为实际目录"
+            rm kernel/include/uapi
+            cp -r uapi kernel/include/uapi
+            echo "修复完成"
+          elif [ -d uapi ] && [ -d kernel/include ]; then
+            echo "复制 uapi 到 kernel/include/"
+            cp -r uapi kernel/include/uapi
+            echo "修复完成"
+          fi
+
       - name: 应用 KernelSU & SUSFS 补丁
         if: inputs.susfs_enable
         run: |

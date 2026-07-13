@@ -379,7 +379,7 @@ log_info "Part 3: 修补 kernel/Kconfig..."
 KCONFIG="$KSU_DIR/kernel/Kconfig"
 
 if ! grep -q "config KPM" "$KCONFIG"; then
-    python3 << 'PYEOF'
+    python3 - "$KCONFIG" << 'PYEOF'
 import sys
 kconfig_path = sys.argv[1] if len(sys.argv) > 1 else "kernel/Kconfig"
 with open(kconfig_path, 'r') as f:
@@ -494,7 +494,7 @@ static int do_enable_kpm(void __user *arg)\
 fi
 
 # Add ioctl handlers using Python for reliability
-python3 << 'PYEOF2'
+python3 - "$DISPATCH_C" << 'PYEOF2'
 import sys, re
 dispatch_path = sys.argv[1] if len(sys.argv) > 1 else "kernel/supercall/dispatch.c"
 with open(dispatch_path, 'r') as f:

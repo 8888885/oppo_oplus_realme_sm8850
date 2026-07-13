@@ -487,13 +487,13 @@ SUPERCALL_H="$KSU_DIR/uapi/supercall.h"
 
 # 4a. 恢复 KSU_IOCTL_ENABLE_KPM 定义
 if ! grep -q "KSU_IOCTL_ENABLE_KPM" "$SUPERCALL_H"; then
-    sed -i 's|// 102 = ENABLE_KPM (KernelPatch Module),deprecated|DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_ENABLE_KPM, _IOC(_IOC_READ, '"'"'K'"'"', 102, 0))|' "$SUPERCALL_H"
+    sed -i 's%// 102 = ENABLE_KPM (KernelPatch Module),deprecated%DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_ENABLE_KPM, _IOC(_IOC_READ, '"'"'K'"'"', 102, 0))%' "$SUPERCALL_H"
     log_info "  + KSU_IOCTL_ENABLE_KPM 已恢复"
 fi
 
 # 4b. 恢复 KSU_IOCTL_KPM 定义
 if ! grep -q "KSU_IOCTL_KPM" "$SUPERCALL_H"; then
-    sed -i 's|// 200 = MANAGE_KPM,deprecated|DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_KPM, _IOC(_IOC_READ | _IOC_WRITE, '"'"'K'"'"', 200, 0))|' "$SUPERCALL_H"
+    sed -i 's%// 200 = MANAGE_KPM,deprecated%DEFINE_KSU_UAPI_CONST(__u32, KSU_IOCTL_KPM, _IOC(_IOC_READ | _IOC_WRITE, '"'"'K'"'"', 200, 0))%' "$SUPERCALL_H"
     log_info "  + KSU_IOCTL_KPM 已恢复"
 fi
 

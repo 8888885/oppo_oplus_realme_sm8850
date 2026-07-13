@@ -261,15 +261,12 @@ jobs:
         run: |
           cd kernel_workspace/KernelSU
           echo "修复 uapi 符号链接..."
-          if [ -L kernel/include/uapi ]; then
-            echo "检测到符号链接，替换为实际目录"
-            rm kernel/include/uapi
-            cp -r uapi kernel/include/uapi
-            echo "修复完成"
-          elif [ -d uapi ] && [ -d kernel/include ]; then
-            echo "复制 uapi 到 kernel/include/"
-            cp -r uapi kernel/include/uapi
-            echo "修复完成"
+          rm -f kernel/include/uapi
+          mkdir -p kernel/include/uapi
+          cp -f uapi/*.h kernel/include/uapi/
+          echo "修复完成，文件列表:"
+          ls -la kernel/include/uapi/
+          test -f kernel/include/uapi/supercall.h && echo "supercall.h OK" || echo "supercall.h MISSING"
           fi
 
       - name: 应用 KernelSU & SUSFS 补丁

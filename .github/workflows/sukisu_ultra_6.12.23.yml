@@ -267,6 +267,17 @@ jobs:
           echo "修复完成，文件列表:"
           ls -la kernel/include/uapi/
           test -f kernel/include/uapi/supercall.h && echo "supercall.h OK" || echo "supercall.h MISSING"
+          # 也复制到 kpm 目录下，确保 kpm.h 的相对路径 include 能找到
+          mkdir -p kernel/kpm/uapi
+          cp -f uapi/*.h kernel/kpm/uapi/
+          # 同时复制到 drivers/kernelsu 的 include 路径（通过符号链接）
+          if [ -L ../common/drivers/kernelsu ]; then
+            KDIR=
+            mkdir -p $KDIR/include/uapi
+            cp -f uapi/*.h $KDIR/include/uapi/
+            echo "Also copied to resolved path: $KDIR/include/uapi/"
+          fi
+          echo "所有 uapi 头文件复制完成"
 
       - name: 应用 KernelSU & SUSFS 补丁
         if: inputs.susfs_enable

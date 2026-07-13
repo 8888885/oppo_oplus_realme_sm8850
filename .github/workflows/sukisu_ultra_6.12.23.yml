@@ -270,13 +270,7 @@ jobs:
           # 也复制到 kpm 目录下，确保 kpm.h 的相对路径 include 能找到
           mkdir -p kernel/kpm/uapi
           cp -f uapi/*.h kernel/kpm/uapi/
-          # 同时复制到 drivers/kernelsu 的 include 路径（通过符号链接）
-          if [ -L ../common/drivers/kernelsu ]; then
-            KDIR=
-            mkdir -p $KDIR/include/uapi
-            cp -f uapi/*.h $KDIR/include/uapi/
-            echo "Also copied to resolved path: $KDIR/include/uapi/"
-          fi
+          # 确保编译时能找到uapi头文件，通过添加include路径
           echo "所有 uapi 头文件复制完成"
 
       - name: 应用 KernelSU & SUSFS 补丁

@@ -277,7 +277,7 @@ jobs:
           cd kernel_workspace
           wget -q https://raw.githubusercontent.com/8888885/oppo_oplus_realme_sm8850/main/kpm_patch.sh -O kpm_patch.sh
           chmod +x kpm_patch.sh
-          bash kpm_patch.sh
+          bash kpm_patch.sh ./KernelSU
           echo "KPM 补丁应用完成"
 
       - name: 应用 KernelSU & SUSFS 补丁

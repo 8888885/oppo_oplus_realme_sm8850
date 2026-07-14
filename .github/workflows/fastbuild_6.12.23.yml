@@ -358,6 +358,13 @@ jobs:
           cp -rf kernel/kpm "$KSU_KERNEL/"
           echo "已复制 kpm/ 目录"
           
+          # 2.1 适配 ReSukiSU：SukiSU Ultra 的 compact.c 使用 ksu_manager_appid
+          #     ReSukiSU 使用 ksu_last_manager_appid (u16) + ksu_is_manager_appid()
+          #     需要做替换以避免编译错误
+          sed -i 's/ksu_manager_appid == -1/ksu_last_manager_appid == KSU_INVALID_APPID/g' "$KSU_KERNEL/kpm/compact.c"
+          sed -i 's/ksu_manager_appid/ksu_last_manager_appid/g' "$KSU_KERNEL/kpm/compact.c"
+          echo "已适配 ReSukiSU manager_appid 变量"
+          
           # 3. 复制 uapi 头文件（kpm.h 依赖 uapi/supercall.h）
           mkdir -p "$KSU_KERNEL/uapi"
           mkdir -p "$KSU_KERNEL/kpm/uapi"

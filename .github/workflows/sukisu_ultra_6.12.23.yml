@@ -276,6 +276,34 @@ jobs:
           # 确保编译时能找到uapi头文件，通过添加include路径
           echo "所有 uapi 头文件复制完成"
 
+      - name: 修复 KPM 编译兼容性 (klog.h + cb_mutex)
+        run: |
+          cd kernel_workspace/KernelSU/kernel
+          
+          echo "=== 修复1: klog.h 头文件搜索路径 ==="
+          # SukiSU Ultra 的 Kbuild 使用 $(KSU_KERNEL_DIR) 绝对路径，
+          # 但内核编译系统对绝对路径处理有问题，导致找不到 include/klog.h
+          # 添加 $(srctree)/$(src)/include 搜索路径（与 ReSukiSU 一致）
+          if ! grep -q 'srctree.*src.*include' Kbuild; then
+            sed -i '/ccflags-y.*-I\$(KSU_KERNEL_DIR)/a ccflags-y += -I$(srctree)/$(src)/include' Kbuild
+            echo "已添加 klog.h 搜索路径"
+          fi
+          # 同时把 klog.h 也复制到 kpm 目录下作为备份
+          cp -f ../include/klog.h kpm/ 2>/dev/null || true
+          cp -f include/klog.h kpm/ 2>/dev/null || true
+          
+          echo "=== 修复2: super_access.c cb_mutex 兼容性 ==="
+          # 内核 6.12+ 的 netlink_kernel_cfg 结构体移除了 cb_mutex 成员
+          # 直接注释掉该行，运行时通过动态查找处理，不影响功能
+          sed -i 's/^DEFINE_MEMBER(netlink_kernel_cfg, cb_mutex)/\/\/ DEFINE_MEMBER(netlink_kernel_cfg, cb_mutex) \/\/ Removed in kernel 6.12+/' kpm/super_access.c
+          echo "已修复 cb_mutex 兼容性"
+          
+          echo "=== 验证修复 ==="
+          echo "Kbuild include 路径:"
+          grep 'ccflags.*-I' Kbuild | head -5
+          echo "super_access.c cb_mutex 行:"
+          grep "cb_mutex" kpm/super_access.c
+
       - name: 应用 KernelSU & SUSFS 补丁
         if: inputs.susfs_enable
         run: |

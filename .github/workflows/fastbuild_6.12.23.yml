@@ -354,44 +354,47 @@ jobs:
           git sparse-checkout set kernel/kpm uapi
           
           # 2. 复制 KPM 源码到 ReSukiSU 的 kernel 目录
-          KSU_KERNEL="kernel_workspace/KernelSU/kernel"
-          cp -rf /tmp/sukisu_src/kernel/kpm "$KSU_KERNEL/"
+          KSU_KERNEL="../kernel_workspace/KernelSU/kernel"
+          cp -rf kernel/kpm "$KSU_KERNEL/"
           echo "已复制 kpm/ 目录"
           
           # 3. 复制 uapi 头文件（kpm.h 依赖 uapi/supercall.h）
           mkdir -p "$KSU_KERNEL/uapi"
-          cp -f /tmp/sukisu_src/uapi/supercall.h "$KSU_KERNEL/uapi/" 2>/dev/null || true
-          # 也复制到 kpm 目录和 kernel 根目录
           mkdir -p "$KSU_KERNEL/kpm/uapi"
-          cp -f /tmp/sukisu_src/uapi/supercall.h "$KSU_KERNEL/kpm/uapi/" 2>/dev/null || true
+          cp -f uapi/supercall.h "$KSU_KERNEL/uapi/" 2>/dev/null || true
+          cp -f uapi/supercall.h "$KSU_KERNEL/kpm/uapi/" 2>/dev/null || true
           echo "已复制 uapi/supercall.h"
           
           # 4. 把 ReSukiSU include/ 下的头文件复制到 kernel/ 根目录（解决 klog.h 等找不到的问题）
           cp -rf "$KSU_KERNEL/include/"* "$KSU_KERNEL/" 2>/dev/null || true
           echo "已复制 include/ 头文件到 kernel/ 根目录"
           
-          # 5. 在 Kbuild 中添加 KPM 编译对象（在 obj-$(CONFIG_KSU) 之前插入）
-          cd "$(pwd)/../$KSU_KERNEL"
+          # 5. 在 Kbuild 中添加 KPM 编译对象
+          cd "$KSU_KERNEL"
           if ! grep -q "kpm/compact.o" Kbuild; then
-            sed -i '/^obj-\$(CONFIG_KSU) += kernelsu.o/i \
-obj-$(CONFIG_KPM) += kpm/compact.o\
-obj-$(CONFIG_KPM) += kpm/kpm.o\
-obj-$(CONFIG_KPM) += kpm/super_access.o' Kbuild
+            echo 'obj-$(CONFIG_KPM) += kpm/compact.o' > /tmp/kpm_kbuild.txt
+            echo 'obj-$(CONFIG_KPM) += kpm/kpm.o' >> /tmp/kpm_kbuild.txt
+            echo 'obj-$(CONFIG_KPM) += kpm/super_access.o' >> /tmp/kpm_kbuild.txt
+            sed -i '/^obj-$(CONFIG_KSU) += kernelsu.o/r /tmp/kpm_kbuild.txt' Kbuild
+            sed -i '/^obj-$(CONFIG_KSU) += kernelsu.o/d' Kbuild
+            echo 'obj-$(CONFIG_KSU) += kernelsu.o' >> Kbuild
             echo "已在 Kbuild 中添加 KPM 编译对象"
           fi
           
-          # 6. 在 Kconfig 中添加 KPM 配置项（在 endmenu 之前插入）
+          # 6. 在 Kconfig 中添加 KPM 配置项
           if ! grep -q "config KPM" Kconfig; then
-            sed -i '/^endmenu/i \
-config KPM\
-    bool "Enable SukiSU KPM"\
-    depends on KSU \&\& 64BIT\
-    default n\
-    help\
-      Enabling this option will activate the KPM feature.\
-      This allows loading KernelPatch modules at runtime.\
-    select KALLSYMS\
-    select KALLSYMS_ALL' Kconfig
+            echo '' > /tmp/kpm_kconfig.txt
+            echo 'config KPM' >> /tmp/kpm_kconfig.txt
+            echo '    bool "Enable SukiSU KPM"' >> /tmp/kpm_kconfig.txt
+            echo '    depends on KSU && 64BIT' >> /tmp/kpm_kconfig.txt
+            echo '    default n' >> /tmp/kpm_kconfig.txt
+            echo '    help' >> /tmp/kpm_kconfig.txt
+            echo '      Enabling this option will activate the KPM feature.' >> /tmp/kpm_kconfig.txt
+            echo '      This allows loading KernelPatch modules at runtime.' >> /tmp/kpm_kconfig.txt
+            echo '    select KALLSYMS' >> /tmp/kpm_kconfig.txt
+            echo '    select KALLSYMS_ALL' >> /tmp/kpm_kconfig.txt
+            echo '' >> /tmp/kpm_kconfig.txt
+            sed -i '/^endmenu/r /tmp/kpm_kconfig.txt' Kconfig
             echo "已在 Kconfig 中添加 KPM 配置项"
           fi
           

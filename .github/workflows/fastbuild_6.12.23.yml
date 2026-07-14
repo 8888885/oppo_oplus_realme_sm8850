@@ -354,7 +354,7 @@ jobs:
           git sparse-checkout set kernel/kpm uapi
           
           # 2. 复制 KPM 源码到 ReSukiSU 的 kernel 目录
-          KSU_KERNEL="../kernel_workspace/KernelSU/kernel"
+          KSU_KERNEL="${{ github.workspace }}/kernel_workspace/KernelSU/kernel"
           cp -rf kernel/kpm "$KSU_KERNEL/"
           echo "已复制 kpm/ 目录"
           

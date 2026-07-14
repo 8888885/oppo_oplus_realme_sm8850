@@ -343,6 +343,76 @@ jobs:
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> ./common/arch/arm64/configs/gki_defconfig
           
+      - name: 添加原生 KPM 支持 (从 SukiSU Ultra 移植)
+        run: |
+          echo "正在从 SukiSU Ultra 移植原生 KPM 代码到 ReSukiSU..."
+          cd kernel_workspace
+          
+          # 1. 克隆 SukiSU Ultra 仓库（仅 kernel 目录）
+          git clone --depth=1 --filter=blob:none --sparse https://github.com/SukiSU-Ultra/SukiSU-Ultra.git /tmp/sukisu_src
+          cd /tmp/sukisu_src
+          git sparse-checkout set kernel/kpm uapi
+          
+          # 2. 复制 KPM 源码到 ReSukiSU 的 kernel 目录
+          KSU_KERNEL="kernel_workspace/KernelSU/kernel"
+          cp -rf /tmp/sukisu_src/kernel/kpm "$KSU_KERNEL/"
+          echo "已复制 kpm/ 目录"
+          
+          # 3. 复制 uapi 头文件（kpm.h 依赖 uapi/supercall.h）
+          mkdir -p "$KSU_KERNEL/uapi"
+          cp -f /tmp/sukisu_src/uapi/supercall.h "$KSU_KERNEL/uapi/" 2>/dev/null || true
+          # 也复制到 kpm 目录和 kernel 根目录
+          mkdir -p "$KSU_KERNEL/kpm/uapi"
+          cp -f /tmp/sukisu_src/uapi/supercall.h "$KSU_KERNEL/kpm/uapi/" 2>/dev/null || true
+          echo "已复制 uapi/supercall.h"
+          
+          # 4. 把 ReSukiSU include/ 下的头文件复制到 kernel/ 根目录（解决 klog.h 等找不到的问题）
+          cp -rf "$KSU_KERNEL/include/"* "$KSU_KERNEL/" 2>/dev/null || true
+          echo "已复制 include/ 头文件到 kernel/ 根目录"
+          
+          # 5. 在 Kbuild 中添加 KPM 编译对象（在 obj-$(CONFIG_KSU) 之前插入）
+          cd "$(pwd)/../$KSU_KERNEL"
+          if ! grep -q "kpm/compact.o" Kbuild; then
+            sed -i '/^obj-\$(CONFIG_KSU) += kernelsu.o/i \
+obj-$(CONFIG_KPM) += kpm/compact.o\
+obj-$(CONFIG_KPM) += kpm/kpm.o\
+obj-$(CONFIG_KPM) += kpm/super_access.o' Kbuild
+            echo "已在 Kbuild 中添加 KPM 编译对象"
+          fi
+          
+          # 6. 在 Kconfig 中添加 KPM 配置项（在 endmenu 之前插入）
+          if ! grep -q "config KPM" Kconfig; then
+            sed -i '/^endmenu/i \
+config KPM\
+    bool "Enable SukiSU KPM"\
+    depends on KSU \&\& 64BIT\
+    default n\
+    help\
+      Enabling this option will activate the KPM feature.\
+      This allows loading KernelPatch modules at runtime.\
+    select KALLSYMS\
+    select KALLSYMS_ALL' Kconfig
+            echo "已在 Kconfig 中添加 KPM 配置项"
+          fi
+          
+          # 7. 修复 cb_mutex 兼容性（内核 6.12+ 移除了该成员）
+          sed -i 's/^DEFINE_MEMBER(netlink_kernel_cfg, cb_mutex)/\/\/ DEFINE_MEMBER(netlink_kernel_cfg, cb_mutex) \/\/ Removed in kernel 6.12+/' kpm/super_access.c
+          echo "已修复 cb_mutex 兼容性"
+          
+          # 8. 清理临时文件
+          rm -rf /tmp/sukisu_src
+          
+          # 9. 验证
+          echo "=== KPM 移植完成 ==="
+          echo "kpm/ 文件:"
+          ls -la kpm/
+          echo "Kbuild KPM 行:"
+          grep "kpm/" Kbuild
+          echo "Kconfig KPM 行:"
+          grep "KPM" Kconfig
+          echo "cb_mutex:"
+          grep "cb_mutex" kpm/super_access.c
+          
       - name: 添加 KSU & 其他配置项
         run: |
           cd kernel_workspace
